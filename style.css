@@ -1,0 +1,56 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20%;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center; 
+}
+
+#search {
+    font-family: inherit;
+    font-size: inherit;
+    background-color: #f4f2f2;
+    border: none;
+    color: #646464;
+    padding: 0.7rem 1rem;
+    border-radius: 30px;
+    width: 30rem;
+    transition: all ease-in-out .5s;
+    margin-right: -2rem;
+}
+
+#search:hover, #search:focus {
+    box-shadow: 0 0 1rem #00000013;
+}
+
+#search:focus {
+    outline: none;
+    background-color: #f0eeee;
+}
+
+#search::-webkit-input-placeholder{
+    font-weight: 100;
+    columns: #ccc;
+}
+
+.card {
+ width: 250px;
+ height: 100px;
+ list-style: none;
+ border-radius: 30px;
+ background: #e8b0e0;
+ box-shadow: 15px 15px 30px rgb(106, 74, 109),
+             -15px -15px 30px rgb(89, 60, 78);
+}
