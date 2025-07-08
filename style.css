@@ -1,56 +1,81 @@
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 20%;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 5rem;
 }
 
 .search-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    text-align: center; 
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+  padding-top: 5rem;
 }
 
 #search {
-    font-family: inherit;
-    font-size: inherit;
-    background-color: #f4f2f2;
-    border: none;
-    color: #646464;
-    padding: 0.7rem 1rem;
-    border-radius: 30px;
-    width: 30rem;
-    transition: all ease-in-out .5s;
-    margin-right: -2rem;
+  font-family: inherit;
+  font-size: inherit;
+  background-color: #f4f2f2;
+  border: none;
+  color: #646464;
+  padding: 0.7rem 1rem;
+  border-radius: 30px;
+  width: 30rem;
+  transition: all ease-in-out 0.5s;
+  margin-right: -2rem;
 }
 
-#search:hover, #search:focus {
-    box-shadow: 0 0 1rem #00000013;
+#search:hover,
+#search:focus {
+  box-shadow: 0 0 1rem #00000013;
 }
 
 #search:focus {
-    outline: none;
-    background-color: #f0eeee;
+  outline: none;
+  background-color: #f0eeee;
 }
 
-#search::-webkit-input-placeholder{
-    font-weight: 100;
-    columns: #ccc;
+#search::-webkit-input-placeholder {
+  font-weight: 100;
+  columns: #ccc;
+}
+
+.fruit-container {
+  display: grid;
+  grid-template-columns: auto;
+  grid-template-rows: auto;
+  padding-top: 3rem;
+  margin-left: 0;
+  margin-right: 0;
+  justify-content: center;
+  align-items: center;
+}
+
+.fruits {
+  margin-left: 2rem;
+  margin-right: 2rem;
+  width: 1000px;
+  justify-content: center;
+  align-items: center;
 }
 
 .card {
- width: 250px;
- height: 100px;
- list-style: none;
- border-radius: 30px;
- background: #e8b0e0;
- box-shadow: 15px 15px 30px rgb(106, 74, 109),
-             -15px -15px 30px rgb(89, 60, 78);
+  display: inline-block;
+  vertical-align: top;
+  width: 150px;
+  height: 100px;
+  list-style: none;
+  text-align: center;
+  align-content: center;
+  border-radius: 10px;
+  background: #ebb0e298;
+  border: 1px solid #000;
+  margin: 1rem;
+  font-size: larger;
+  font-weight: bold;
 }
