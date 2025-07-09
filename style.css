@@ -19,25 +19,24 @@ body {
 
 #search {
   font-family: inherit;
-  font-size: inherit;
+  font-size: 1rem;
   background-color: #f4f2f2;
   border: none;
   color: #646464;
   padding: 0.7rem 1rem;
   border-radius: 30px;
   width: 30rem;
-  transition: all ease-in-out 0.5s;
-  margin-right: -2rem;
 }
 
-#search:hover,
-#search:focus {
+#search:hover {
   box-shadow: 0 0 1rem #00000013;
 }
 
 #search:focus {
   outline: none;
   background-color: #f0eeee;
+  border-radius: 15px 15px 0 0;
+  box-shadow: 0  -6px  1rem -6px #00000013 ;
 }
 
 #search::-webkit-input-placeholder {
@@ -45,10 +44,34 @@ body {
   columns: #ccc;
 }
 
+.filter-container {
+  display: flex;
+  justify-self: center;
+  width: 30rem;
+  background-color: #f0eeee;
+  box-sizing: content-box;
+  border-radius: 0 0 15px 15px;
+  box-shadow:
+    6px  0   1rem -6px #00000013,   
+   -6px  0   1rem -6px #00000013,
+    0    6px 1rem -6px #00000013; 
+}
+
+.filter-container .filters {
+  display: list-item;
+  list-style: none;
+}
+
+.filter-container .filters li {
+  list-style: none;
+  border-radius: 3px;
+  padding: 8px 25px;
+  transition: all .5s linear;
+  color: #4b4b4b;
+}
+
 .fruit-container {
   display: grid;
-  grid-template-columns: auto;
-  grid-template-rows: auto;
   padding-top: 3rem;
   margin-left: 0;
   margin-right: 0;
@@ -62,7 +85,7 @@ body {
   width: 1000px;
   justify-content: center;
   align-items: center;
-}
+} 
 
 .card {
   display: inline-block;
@@ -74,8 +97,9 @@ body {
   align-content: center;
   border-radius: 10px;
   background: #ebb0e298;
-  border: 1px solid #000;
+  border: 1px solid #9f799a98;
   margin: 1rem;
   font-size: larger;
   font-weight: bold;
+  color: #482f45;
 }
