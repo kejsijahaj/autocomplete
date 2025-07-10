@@ -11,10 +11,19 @@ body {
 }
 
 .search-bar {
+  display: flex;
   align-items: center;
-  justify-content: space-between;
-  text-align: center;
+  justify-content: center;
   padding-top: 5rem;
+}
+
+#chipContainer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  min-width: 50px;
+  padding-left: 10px;
 }
 
 #search {
@@ -25,7 +34,10 @@ body {
   color: #646464;
   padding: 0.7rem 1rem;
   border-radius: 30px;
-  width: 30rem;
+  flex-grow: 1;
+  min-width: 150px;
+  max-width: 30rem;
+  border-radius: 30px;
 }
 
 #search:hover {
@@ -36,7 +48,7 @@ body {
   outline: none;
   background-color: #f0eeee;
   border-radius: 15px 15px 0 0;
-  box-shadow: 0  -6px  1rem -6px #00000013 ;
+  box-shadow: 0 -6px 1rem -6px #00000013;
 }
 
 #search::-webkit-input-placeholder {
@@ -51,10 +63,8 @@ body {
   background-color: #f0eeee;
   box-sizing: content-box;
   border-radius: 0 0 15px 15px;
-  box-shadow:
-    6px  0   1rem -6px #00000013,   
-   -6px  0   1rem -6px #00000013,
-    0    6px 1rem -6px #00000013; 
+  box-shadow: 6px 0 1rem -6px #00000013, -6px 0 1rem -6px #00000013,
+    0 6px 1rem -6px #00000013;
 }
 
 .filter-container .filters {
@@ -66,8 +76,9 @@ body {
   list-style: none;
   border-radius: 3px;
   padding: 8px 25px;
-  transition: all .5s linear;
+  transition: all 0.5s linear;
   color: #4b4b4b;
+  cursor: pointer;
 }
 
 .fruit-container {
@@ -85,7 +96,7 @@ body {
   width: 1000px;
   justify-content: center;
   align-items: center;
-} 
+}
 
 .card {
   display: inline-block;
@@ -102,4 +113,36 @@ body {
   font-size: larger;
   font-weight: bold;
   color: #482f45;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #ccc;
+  border-radius: 14px;
+  padding: 2px 8px;
+  margin: 2px;
+  gap: 5px;
+  font-size: .9em;
+  white-space: nowrap;
+}
+
+.draft{
+  background: #ccc;
+  color: #555;
+}
+
+.chip:not(.draft) {
+  background: #d6c1e4;
+  color: #482f45;
+}
+
+.chip-close {
+  cursor: pointer;
+  margin-left: 5px;
+  font-weight: bold;
+  color: red;
+  background: none;
+  border: none;
+  font-size: 1em;
 }

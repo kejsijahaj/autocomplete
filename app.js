@@ -2,8 +2,12 @@ const searchInput = document.querySelector("#search");
 const searchBar = document.querySelector(".search-bar");
 const fruitContainer = document.querySelector(".fruits");
 const filterContainer = document.querySelector(".filters");
+const chipContainer = document.querySelector("#chipContainer");
 
 let fruitCache = []; // keep data after first fetch
+let activeFilters = [];
+let pendingKey = ""; // stores key for draft chip
+let pendingChip = null;
 
 // get fruits from API
 
@@ -17,49 +21,6 @@ async function getFruits() {
   return fruitCache;
 }
 
-// display the data
-
-const renderList = (fruits) => {
-  fruitContainer.innerHTML = "";
-
-  fruits.forEach(fruit => {
-    const li = document.createElement("li");
-    li.className = "card";
-
-    li.innerHTML = Object.entries(fruit).map(([key,value]) => `${key}: ${value}`).join("<br>");
-
-    fruitContainer.appendChild(li);
-  });
-};
-
-// display the filters
-
-const renderFilters = (fruits) => {
-  filterContainer.innerHTML = "";
-  
-  const keys = Object.keys(fruits[0] || {});
-
-  keys.forEach((key) => {
-    const li = document.createElement("li");
-    li.textContent = key;
-    li.className = "filter";
-    filterContainer.appendChild(li);
-  })
-};
-
-// filter the data
-
-async function filterSuggestions() {
-  const all = await getFruits();
-  const searchValue = searchInput.value.trim().toLowerCase();
-  const list = searchValue
-    ? all.filter((item) => item.name.toLowerCase().includes(searchValue))
-    : all;
-
-  // renderList(list);
-  return all;
-}
-
 // debounce event
 
 function debounce(myFunction, delay = 300) {
@@ -71,6 +32,178 @@ function debounce(myFunction, delay = 300) {
   };
 }
 
+// --------- rendering ----------
+
+// display the fruit cards
+
+const renderList = (fruits) => {
+  fruitContainer.innerHTML = "";
+  if (fruits.length === 0) {
+    fruitContainer.innerHTML =
+      "<li class='card no-results'>No fruits found matching your criteria.</li>";
+    return;
+  }
+
+  fruits.forEach((fruit) => {
+    const li = document.createElement("li");
+    li.className = "card";
+
+    li.innerHTML = Object.entries(fruit)
+      .filter(([key]) => key !== "name") // dont repeat name
+      .map(([key, value]) => {
+        if (typeof value === "object" && value !== null) {
+          return `${key}: ${Object.entries(value)
+            .map(([k, v]) => `${k.substring(0, 3)}:${v}`)
+            .join(", ")}`;
+        }
+        return `${key}: ${value}`;
+      })
+      .join("<br>");
+
+    fruitContainer.appendChild(li);
+  });
+};
+
+// display the filter dropdown
+
+const renderFilters = (fruits) => {
+  filterContainer.innerHTML = "";
+
+  const keys = Object.keys(fruits[0] || {});
+
+  const usedKeys = new Set(activeFilters.map((f) => f.key));
+
+  keys.forEach((key) => {
+    if (!usedKeys.has(key)) {
+      const li = document.createElement("li");
+      li.textContent = key;
+      li.className = "filter";
+      filterContainer.appendChild(li);
+    }
+  });
+
+  // hide dropdown when no more available filters
+  if (filterContainer.children.length === 0) {
+    filterContainer.style.display = "none";
+  } else {
+    filterContainer.style.display = "flex";
+  }
+};
+
+// ----------- chip handling -------------
+
+// draft chips (half chips)
+
+const handleKeyClick = (key) => {
+  if (pendingChip) {
+    pendingChip.remove();
+    pendingChip = null;
+    pendingKey = "";
+  }
+
+  pendingKey = key;
+
+  pendingChip = document.createElement("div");
+  pendingChip.className = "chip draft";
+  pendingChip.textContent = key + ": ";
+  chipContainer.appendChild(pendingChip);
+
+  searchInput.value = "";
+  searchInput.focus();
+  filterContainer.innerHTML = "";
+};
+
+// complete chip
+
+const completeChip = (e) => {
+  if (!pendingChip) return;
+
+  const triggers = ["Enter", "Tab", " ", ","];
+  if (!triggers.includes(e.key)) return;
+  e.preventDefault();
+
+  const value = searchInput.value.trim();
+  if (!value) {
+    pendingChip.remove();
+    pendingChip = null;
+    pendingKey = "";
+    filterSuggestions();
+    return;
+  }
+
+  pendingChip.classList.remove("draft");
+  pendingChip.textContent = `${pendingKey}: ${value}`;
+
+  const close = document.createElement("button");
+  close.className = "chip-close";
+  close.textContent = "x";
+
+  const k = pendingKey;
+  const v = value;
+  close.addEventListener("click", () => {
+    pendingChip.remove();
+    const i = activeFilters.findIndex((f) => f.key === k && f.value === v);
+    if (i > -1) {
+      activeFilters.splice(i, 1);
+    }
+    filterSuggestions();
+    searchInput.focus();
+  });
+
+  pendingChip.appendChild(close);
+
+  activeFilters.push({ key: pendingKey, value });
+
+  pendingKey = "";
+  pendingChip = null;
+  searchInput.value = "";
+
+  filterSuggestions();
+  filterContainer.innerHTML = "";
+};
+
+// --------- filter & events --------
+
+// filter the data
+
+async function filterSuggestions() {
+  const all = await getFruits();
+  let result = all;
+
+  activeFilters.forEach(({ key, value }) => {
+    const searchValue = value.toLowerCase();
+    result = result.filter((fruit) => {
+      if (fruit[key] === undefined || fruit[key] === null) return false;
+      if (typeof fruit[key] === "object") {
+        return Object.values(fruit[key]).some((nestedVal) =>
+          String(nestedVal).toLowerCase().includes(searchValue)
+        );
+      }
+
+      return String(fruit[key]).toLowerCase().includes(searchValue);
+    });
+  });
+
+  const currentInput = searchInput.value.trim().toLowerCase();
+  if (currentInput && !pendingKey) {
+    result = result.filter((fruit) =>
+      Object.values(fruit).some((val) => {
+        if (val === undefined || val === null) return false;
+        if (typeof val === "object") {
+          return Object.values(val).some((nestedVal) =>
+            String(nestedVal).toLowerCase().includes(currentInput)
+          );
+        }
+        return String(val).toLowerCase().includes(currentInput);
+      })
+    );
+  }
+
+  renderList(result);
+}
+
+// -------- event listeners ---------
+
 // suggestion blocks show once page is loaded
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -80,7 +213,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // when user starts typing, the suggestion blocks are filtered
 
-searchInput.addEventListener("keyup", debounce(filterSuggestions, 300));
+searchInput.addEventListener("keyup", debounce(() => {
+  if(!pendingKey){
+    filterSuggestions
+  }
+},300));
 
 // filters are displayed when you click the input tag
 searchInput.addEventListener("focus", async () => {
@@ -90,7 +227,20 @@ searchInput.addEventListener("focus", async () => {
 
 // clear dropdown when out of focus
 
-searchInput.addEventListener('blur', () => {
-  filterContainer.innerHTML = '';     
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".filters") && e.target.closest(".search-b")) {
+    filterContainer.innerHTML = "";
+    filterContainer.style.display = "none";
+  }
+});
+// draft chip wiring
+
+filterContainer.addEventListener("click", (e) => {
+  if (e.target.matches(".filter")) {
+    handleKeyClick(e.target.textContent);
+    filterContainer.innerHTML = "";
+    filterContainer.style.display = "none";
+  };
 });
 
+searchInput.addEventListener("keydown", completeChip);
