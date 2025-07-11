@@ -47,9 +47,12 @@ const renderList = (fruits) => {
   fruits.forEach((fruit) => {
     const li = document.createElement("li");
     li.className = "card";
+    const label = document.createElement("h4");
+    label.textContent = fruit.name;
+    li.appendChild(label);
 
-    li.innerHTML = Object.entries(fruit)
-      .filter(([key]) => key !== "name") // dont repeat name
+    li.innerHTML += Object.entries(fruit)
+      .filter(([key]) => key !== "name")
       .map(([key, value]) => {
         if (typeof value === "object" && value !== null) {
           return `${key}: ${Object.entries(value)
@@ -116,50 +119,92 @@ const handleKeyClick = (key) => {
 // complete chip
 
 const completeChip = (e) => {
-  if (!pendingChip) return;
-
-  const triggers = ["Enter", "Tab", " ", ","];
-  if (!triggers.includes(e.key)) return;
-  e.preventDefault();
-
-  const value = searchInput.value.trim();
-  if (!value) {
+  if (e.key === "Backspace" && searchInput.value === "" && pendingChip) {
+    e.preventDefault();
     pendingChip.remove();
     pendingChip = null;
     pendingKey = "";
     filterSuggestions();
+    renderFilters(fruitCache);
     return;
   }
 
-  pendingChip.classList.remove("draft");
-  pendingChip.textContent = `${pendingKey}: ${value}`;
+  if (
+    e.key === "Backspace" &&
+    searchInput.value === "" &&
+    !pendingChip &&
+    activeFilters.length > 0
+  ) {
+    e.preventDefault();
 
-  const close = document.createElement("button");
-  close.className = "chip-close";
-  close.textContent = "x";
+    activeFilters.pop();
 
-  const k = pendingKey;
-  const v = value;
-  close.addEventListener("click", () => {
-    pendingChip.remove();
-    const i = activeFilters.findIndex((f) => f.key === k && f.value === v);
-    if (i > -1) {
-      activeFilters.splice(i, 1);
+    const chipElements = chipContainer.querySelectorAll(".chip:not(.draft)");
+    if (chipElements.length > 0) {
+      chipElements[chipElements.length - 1].remove();
     }
+
     filterSuggestions();
-    searchInput.focus();
-  });
+    renderFilters(fruitCache);
+    return;
+  }
 
-  pendingChip.appendChild(close);
+  if (pendingChip) {
+    const triggers = ["Enter", "Tab", " ", ","];
+    if (!triggers.includes(e.key)) return;
+    e.preventDefault();
 
-  activeFilters.push({ key: pendingKey, value });
+    const value = searchInput.value.trim();
+    if (!value) {
+      pendingChip.remove();
+      pendingChip = null;
+      pendingKey = "";
+      filterSuggestions();
+      return;
+    }
 
-  pendingKey = "";
-  pendingChip = null;
-  searchInput.value = "";
+    pendingChip.classList.remove("draft");
+    pendingChip.textContent = `${pendingKey}: ${value}`;
 
-  filterSuggestions();
-  filterContainer.innerHTML = "";
+    const close = document.createElement("button");
+    close.className = "chip-close";
+    close.textContent = "x";
+
+    const k = pendingKey;
+    const v = value;
+    const currentChipEl = pendingChip;
+    close.addEventListener("click", () => {
+      currentChipEl.remove();
+      const i = activeFilters.findIndex((f) => f.key === k && f.value === v);
+      if (i > -1) {
+        activeFilters.splice(i, 1);
+      }
+      filterSuggestions();
+      renderFilters(fruitCache);
+      searchInput.focus();
+    });
+
+    pendingChip.appendChild(close);
+    activeFilters.push({ key: pendingKey, value });
+    pendingKey = "";
+    pendingChip = null;
+    searchInput.value = "";
+    filterSuggestions();
+    filterContainer.innerHTML = "";
+    return;
+  }
+
+  if (!pendingChip && e.key === "Enter") {
+    if (fruitCache.length === 0) return;
+
+    const potentialKey = searchInput.value.trim().toLowerCase();
+    const validKeys = Object.keys(fruitCache[0]);
+
+    if (validKeys.includes(potentialKey)) {
+      e.preventDefault();
+      handleKeyClick(potentialKey);
+    }
+  }
 };
 
 // --------- filter & events --------
@@ -190,8 +235,10 @@ async function filterSuggestions() {
       Object.values(fruit).some((val) => {
         if (val === undefined || val === null) return false;
         if (typeof val === "object") {
-          return Object.values(val).some((nestedVal) =>
-            String(nestedVal).toLowerCase().includes(currentInput)
+          return Object.values(val).some(
+            (nestedVal) =>
+              String(nestedVal).toLowerCase().includes(currentInput)
+            //to search for nested values, ex "nutritions" is an object within the fruits object
           );
         }
         return String(val).toLowerCase().includes(currentInput);
@@ -213,11 +260,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // when user starts typing, the suggestion blocks are filtered
 
-searchInput.addEventListener("keyup", debounce(() => {
-  if(!pendingKey){
-    filterSuggestions
-  }
-},300));
+searchInput.addEventListener(
+  "keyup",
+  debounce(() => {
+    filterSuggestions();
+  }, 300)
+);
 
 // filters are displayed when you click the input tag
 searchInput.addEventListener("focus", async () => {
@@ -228,11 +276,11 @@ searchInput.addEventListener("focus", async () => {
 // clear dropdown when out of focus
 
 document.addEventListener("click", (e) => {
-  if (!e.target.closest(".filters") && e.target.closest(".search-b")) {
-    filterContainer.innerHTML = "";
+  if (!e.target.closest(".search-wrapper")) {
     filterContainer.style.display = "none";
   }
 });
+
 // draft chip wiring
 
 filterContainer.addEventListener("click", (e) => {
@@ -240,7 +288,7 @@ filterContainer.addEventListener("click", (e) => {
     handleKeyClick(e.target.textContent);
     filterContainer.innerHTML = "";
     filterContainer.style.display = "none";
-  };
+  }
 });
 
 searchInput.addEventListener("keydown", completeChip);
