@@ -13,7 +13,8 @@ body {
 
 .search-wrapper {
   position: relative;
-  width: 50rem;
+  max-width: 50rem;
+  width: 90%;
   margin: 5rem auto 0;
 }
 
@@ -110,11 +111,13 @@ body {
 }
 
 .fruits {
+  display: flexbox;
   margin-left: 2rem;
   margin-right: 2rem;
-  width: 1410px;
+  /* width: 1410px; */
   justify-content: center;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .card {
@@ -164,27 +167,4 @@ body {
   background: none;
   border: none;
   font-size: 1em;
-}
-
-.operator-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.op-btn {
-  padding: 5px 15px;
-  border: 1px solid #ccc;
-  border-radius: 15px;
-  background-color: #f4f2f2;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.op-btn.active {
-  background-color: #d6c1e4;
-  color: #482f45;
-  border-color: #482f45;
-  font-weight: bold;
 }
