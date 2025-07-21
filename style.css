@@ -8,6 +8,7 @@ body {
   justify-content: center;
   align-items: center;
   padding-bottom: 5rem;
+  margin: auto;
 }
 
 .search-wrapper {
@@ -111,7 +112,7 @@ body {
 .fruits {
   margin-left: 2rem;
   margin-right: 2rem;
-  width: 1500px;
+  width: 1410px;
   justify-content: center;
   align-items: center;
 }
