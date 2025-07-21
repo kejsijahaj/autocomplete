@@ -76,23 +76,14 @@ const renderFilters = (fruits) => {
 
   const keys = Object.keys(fruits[0] || {});
 
-  const usedKeys = new Set(activeFilters.map((f) => f.key));
-
   keys.forEach((key) => {
-    if (!usedKeys.has(key)) {
-      const li = document.createElement("li");
-      li.textContent = key;
-      li.className = "filter";
-      filterContainer.appendChild(li);
-    }
+    const li = document.createElement("li");
+    li.textContent = key;
+    li.className = "filter";
+    filterContainer.appendChild(li);
   });
 
-  // hide dropdown when no more available filters
-  if (filterContainer.children.length === 0) {
-    filterContainer.style.display = "none";
-  } else {
-    filterContainer.style.display = "flex";
-  }
+  filterContainer.style.display = "flex";
 };
 
 // ----------- chip handling -------------
@@ -238,7 +229,9 @@ async function filterSuggestions() {
     } else {
       // OR filters from the original 'all' list
       result = all.filter((fruit) => {
-        return activeFilters.some((filter) => fruitMatchesFilter(fruit, filter));
+        return activeFilters.some((filter) =>
+          fruitMatchesFilter(fruit, filter)
+        );
       });
     }
   }
