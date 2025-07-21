@@ -24,7 +24,7 @@ body {
   align-items: center;
   justify-content: center;
   background-color: #f4f2f2;
-  /* border-radius: 30px; */
+  border-radius: 30px;
   padding: 0.7rem 1rem;
 }
 
@@ -32,9 +32,9 @@ body {
   box-shadow: 0 0 1rem #00000013;
 }
 
-/* .search-bar:active {
+.search-bar:focus {
    border-radius: 15px 15px 0 0; 
-} */
+}
 
 #chipContainer {
   display: flex;
@@ -52,10 +52,8 @@ body {
   border: none;
   color: #646464;
   padding: 0.7rem 1rem;
-  /* border-radius: 30px; */
   flex-grow: 1;
   min-width: 150px;
-  /* border-radius: 30px; */
   justify-content: center;
 }
 
@@ -69,17 +67,16 @@ body {
 }
 
 .filter-container {
-  display: flex;
-  /* position: absolute; ?!?!?!?!?!?!?! */
-  justify-self: center;
-  width: 50rem;
-  top: 100%;
+  display: none;
+  position: absolute;
+  width: 100%;
+  top: 67%;
+  margin-top: 0;
   left: 0;
   background-color: #f4f2f2;
-  /* border-radius: 0 0 15px 15px; */
-  /* box-shadow: 6px 0 1rem -6px #00000013, -6px 0 1rem -6px #00000013,
-    0 6px 1rem -6px #00000013; */
+  border-radius: 0 0 15px 15px;
   z-index: 10;
+  overflow: hidden;
 }
 
 .filter-container .hidden {
@@ -87,16 +84,16 @@ body {
 }
 
 .filter-container .filters {
-  display: list-item;
   list-style: none;
-  /* padding: .5rem 0; */
+  margin: 0;
+  padding: .5rem 0;
 }
 
 .filter-container .filters li {
   list-style: none;
-  /* border-radius: 3px; */
+  border-radius: 3px;
   padding: 8px 25px;
-  transition: all 0.5s linear;
+  transition: background-color 0.2s linear;
   color: #4b4b4b;
   cursor: pointer;
 }

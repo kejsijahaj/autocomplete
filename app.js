@@ -1,7 +1,7 @@
 const searchInput = document.querySelector("#search");
 const searchBar = document.querySelector(".search-bar");
 const fruitContainer = document.querySelector(".fruits");
-const filterContainer = document.querySelector(".filters");
+const filterContainer = document.querySelector(".filter-container");
 const chipContainer = document.querySelector("#chipContainer");
 const operatorContainer = document.querySelector(".operator-buttons");
 
@@ -71,18 +71,20 @@ const renderList = (fruits) => {
 // display the filter dropdown
 
 const renderFilters = (fruits) => {
-  filterContainer.innerHTML = "";
+  const listElement = filterContainer.querySelector(".filters");
+  listElement.innerHTML = "";
 
-  const keys = Object.keys(fruits[0] || {});
+  if (!fruits || fruits.length === 0) {
+    return;
+  }
 
+  const keys = Object.keys(fruits[0]);
   keys.forEach((key) => {
-    const li = document.createElement("li");
-    li.textContent = key;
-    li.className = "filter";
-    filterContainer.appendChild(li);
+    const listItem = document.createElement("li");
+    listItem.className = "filter";
+    listItem.textContent = key;
+    listElement.appendChild(listItem);
   });
-
-  filterContainer.style.display = "flex";
 };
 
 // ----------- chip handling -------------
@@ -157,7 +159,7 @@ const completeChip = (e) => {
 
     if (lastGroup.filters.length > 0) {
       lastGroup.operator = operator;
-      activeFilters.push({ filters: [], operator: null }); 
+      activeFilters.push({ filters: [], operator: null });
       searchInput.value = "";
       filterSuggestions();
     }
@@ -335,14 +337,23 @@ searchInput.addEventListener(
 
 // filters are displayed when you click the input tag
 searchInput.addEventListener("focus", async () => {
+  console.log("Focus event fired! Attempting to show dropdown.");
   const fruits = await getFruits();
+  console.log("Fruits data received:", fruits);
   renderFilters(fruits);
+  filterContainer.style.display = "block";
 });
 
-// clear dropdown when out of focus
+// hide dropdown when out of focus
 
 document.addEventListener("click", (e) => {
-  if (!e.target.closest(".search-wrapper")) {
+  if (e.target !== searchInput && !filterContainer.contains(e.target)) {
+    console.log("Clicked outside, hiding dropdown.");
+    filterContainer.style.display = "none";
+  }
+
+  if (e.target.matches(".filter")) {
+    createPendingChip(e.target.textContent);
     filterContainer.style.display = "none";
   }
 });
@@ -351,7 +362,7 @@ document.addEventListener("click", (e) => {
 
 filterContainer.addEventListener("click", (e) => {
   if (e.target.matches(".filter")) {
-    createPendingChip(e.target.textContent);;
+    createPendingChip(e.target.textContent);
   }
 });
 
