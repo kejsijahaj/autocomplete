@@ -1,9 +1,7 @@
 const searchInput = document.querySelector("#search");
-const searchBar = document.querySelector(".search-bar");
-const fruitContainer = document.querySelector(".fruits");
+const fruitContainer = document.querySelector(".fruit-container");
 const filterContainer = document.querySelector(".filter-container");
 const chipContainer = document.querySelector("#chipContainer");
-const operatorContainer = document.querySelector(".operator-buttons");
 
 let fruitCache = []; // keep data after first fetch
 let activeFilters = [{ filters: [], operator: null }];
@@ -13,13 +11,20 @@ let pendingChip = null;
 // get fruits from API
 
 async function getFruits() {
-  if (fruitCache.length) return fruitCache; // already have it
-  const response = await fetch(
-    "https://corsproxy.io/?https://www.fruityvice.com/api/fruit/all"
-  );
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  fruitCache = await response.json();
-  return fruitCache;
+  if (fruitCache.length) return fruitCache;
+  try {
+    const response = await fetch(
+      "https://corsproxy.io/?https://www.fruityvice.com/api/fruit/all"
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    fruitCache = await response.json();
+    return fruitCache;
+  } catch (error) {
+    console.error("Failed to fetch fruits:", error);
+    fruitContainer.innerHTML =
+      "<p>Could not load fruit data. Please try again later.</p>";
+    return [];
+  }
 }
 
 // debounce event
@@ -241,6 +246,23 @@ const renderChips = () => {
 
 // --------- filter & events --------
 
+const splitByOr = (filterGroups) => {
+  const supergroups = [];
+  let currentAndChain = [];
+
+  for (const group of filterGroups) {
+    currentAndChain.push(group);
+    if (group.operator === "OR") {
+      supergroups.push(currentAndChain);
+      currentAndChain = [];
+    }
+  }
+  if (currentAndChain.length > 0) {
+    supergroups.push(currentAndChain);
+  }
+  return supergroups;
+};
+
 // filter the data
 
 async function filterSuggestions() {
@@ -260,39 +282,20 @@ async function filterSuggestions() {
     return String(fruit[key]).toLowerCase().includes(searchValue);
   };
 
-  if (activeFilters.some((group) => group.filters.length > 0)) {
+  const activeGroupsWithFilters = activeFilters.filter(
+    (g) => g.filters.length > 0
+  );
+
+  if (activeGroupsWithFilters.length > 0) {
+    const supergroups = splitByOr(activeGroupsWithFilters);
     result = all.filter((fruit) => {
-      for (let i = 0; i < activeFilters.length; i++) {
-        const group = activeFilters[i];
-        if (group.filters.length === 0) continue;
-
-        const matchesThisGroup = group.filters.every((filter) =>
-          fruitMatchesFilter(fruit, filter)
-        );
-
-        // --- Logic to combine groups ---
-        const nextOperator = group.operator;
-
-        if (matchesThisGroup && nextOperator === "OR") {
-          return true;
-        }
-        if (!matchesThisGroup && nextOperator === "AND") {
-          return false;
-        }
-        if (
-          matchesThisGroup &&
-          (nextOperator === "AND" || nextOperator === null)
-        ) {
-          if (i === activeFilters.length - 1) return true;
-        }
-        if (
-          !matchesThisGroup &&
-          (nextOperator === "OR" || nextOperator === null)
-        ) {
-          if (i === activeFilters.length - 1) return false;
-        }
-      }
-      return false;
+      return supergroups.some((andChain) => {
+        return andChain.every((group) => {
+          return group.filters.every((filter) =>
+            fruitMatchesFilter(fruit, filter)
+          );
+        });
+      });
     });
   } else {
     result = all;
