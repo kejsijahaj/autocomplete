@@ -4,7 +4,7 @@ const filterContainer = document.querySelector(".filter-container");
 const chipContainer = document.querySelector("#chipContainer");
 
 let fruitCache = []; // keep data after first fetch
-let activeFilters = [{ filters: [], operator: null }];
+let filterTokens = [];
 let pendingKey = ""; // stores key for draft chip
 let pendingChip = null;
 
@@ -116,19 +116,10 @@ const completeChip = (e) => {
     e.key === "Backspace" &&
     value === "" &&
     !pendingChip &&
-    activeFilters[0].filters.length > 0
+    filterTokens.length > 0
   ) {
     e.preventDefault();
-    const lastGroupIndex = activeFilters.length - 1;
-    const lastGroup = activeFilters[lastGroupIndex];
-
-    lastGroup.filters.pop();
-
-    if (lastGroup.filters.length === 0 && activeFilters.length > 1) {
-      activeFilters.pop();
-      activeFilters[activeFilters.length - 1].operator = null;
-    }
-
+    filterTokens.pop();
     filterSuggestions();
     return;
   }
@@ -146,28 +137,30 @@ const completeChip = (e) => {
     e.preventDefault();
     const [key, ...valParts] = value.split(":");
     const val = valParts.join(":").trim();
-    const validKeys = Object.keys(fruitCache[0] || {});
+    const validKeys = fruitCache.length ? Object.keys(fruitCache[0]) : [];
 
     if (key && val && validKeys.includes(key.trim().toLowerCase())) {
-      const currentGroup = activeFilters[activeFilters.length - 1];
-      currentGroup.filters.push({ key: key.trim(), value: val });
+      filterTokens.push({ key: key.trim(), value: val });
       searchInput.value = "";
       filterSuggestions();
     }
     return;
   }
 
+  if ((value === "(" || value === ")") && !pendingChip) {
+    e.preventDefault();
+    filterTokens.push(value);
+    searchInput.value = "";
+    filterSuggestions();
+    return;
+  }
+
   if ((value === "&" || value === "|") && !pendingChip) {
     e.preventDefault();
     const operator = value === "&" ? "AND" : "OR";
-    const lastGroup = activeFilters[activeFilters.length - 1];
-
-    if (lastGroup.filters.length > 0) {
-      lastGroup.operator = operator;
-      activeFilters.push({ filters: [], operator: null });
-      searchInput.value = "";
-      filterSuggestions();
-    }
+    filterTokens.push(operator);
+    searchInput.value = "";
+    filterSuggestions();
     return;
   }
 
@@ -175,8 +168,8 @@ const completeChip = (e) => {
   if (pendingChip && triggers.includes(e.key)) {
     e.preventDefault();
     if (value) {
-      const currentGroup = activeFilters[activeFilters.length - 1];
-      currentGroup.filters.push({ key: pendingKey, value });
+      filterTokens.push({ key: pendingKey, value });
+      pendingChip.remove();
       pendingChip = null;
       pendingKey = "";
       searchInput.value = "";
@@ -185,9 +178,9 @@ const completeChip = (e) => {
     return;
   }
 
-  if (e.key === "Enter" && !pendingChip) {
+  if (e.key === "Enter" && !pendingChip && value) {
     const potentialKey = value.toLowerCase();
-    const validKeys = Object.keys(fruitCache[0] || {});
+    const validKeys = fruitCache.length ? Object.keys(fruitCache[0]) : [];
     if (validKeys.includes(potentialKey)) {
       e.preventDefault();
       createPendingChip(potentialKey);
@@ -199,104 +192,123 @@ const completeChip = (e) => {
 const renderChips = () => {
   chipContainer.innerHTML = "";
 
-  activeFilters.forEach((group, groupIndex) => {
-    group.filters.forEach((filter, filterIndex) => {
-      const chip = document.createElement("div");
-      chip.className = "chip";
-      chip.textContent = `${filter.key}: ${filter.value}`;
+  filterTokens.forEach((token, index) => {
+    const chip = document.createElement("div");
+    chip.className = "chip";
+
+    if (typeof token === "object" && token !== null) {
+      chip.textContent = `${token.key}: ${token.value}`;
 
       const close = document.createElement("button");
       close.className = "chip-close";
-      close.textContent = "x";
+      close.textContent = "×";
       close.addEventListener("click", () => {
-        activeFilters[groupIndex].filters.splice(filterIndex, 1);
-
-        if (
-          activeFilters[groupIndex].filters.length === 0 &&
-          activeFilters.length > 1
-        ) {
-          activeFilters.splice(groupIndex, 1);
-          if (groupIndex > 0) {
-            activeFilters[groupIndex - 1].operator = null;
-          }
-        }
-
+        filterTokens.splice(index, 1);
         filterSuggestions();
-        searchInput.focus();
       });
-
       chip.appendChild(close);
-      chipContainer.appendChild(chip);
-    });
-
-    // Render the operator after the group, if it exists
-    if (group.operator) {
-      const operatorChip = document.createElement("div");
-      operatorChip.className = "chip operator";
-      operatorChip.textContent = group.operator;
-      chipContainer.appendChild(operatorChip);
+    } else {
+      chip.textContent = token;
+      chip.classList.add("operator");
     }
+
+    chipContainer.appendChild(chip);
   });
 
-  // Re-add the pending chip if it exists
   if (pendingChip) {
     chipContainer.appendChild(pendingChip);
   }
 };
 
-// --------- filter & events --------
+// ------ filter helper functions ---------
 
-const splitByOr = (filterGroups) => {
-  const supergroups = [];
-  let currentAndChain = [];
+const fruitMatchesFilter = (fruit, filter) => {
+  const { key, value } = filter;
+  const searchValue = value.toLowerCase();
 
-  for (const group of filterGroups) {
-    currentAndChain.push(group);
-    if (group.operator === "OR") {
-      supergroups.push(currentAndChain);
-      currentAndChain = [];
-    }
+  if (fruit[key] === undefined || fruit[key] === null) return false;
+  if (typeof fruit[key] === "object") {
+    return Object.values(fruit[key]).some((nestedVal) =>
+      String(nestedVal).toLowerCase().includes(searchValue)
+    );
   }
-  if (currentAndChain.length > 0) {
-    supergroups.push(currentAndChain);
-  }
-  return supergroups;
+  return String(fruit[key]).toLowerCase().includes(searchValue);
 };
 
-// filter the data
+const evaluate = (node, fruit) => {
+  if (typeof node === "object" && node !== null && !Array.isArray(node)) {
+    return fruitMatchesFilter(fruit, node);
+  }
+
+  if (Array.isArray(node)) {
+    const [left, operator, right] = node;
+
+    const leftResult = evaluate(left, fruit);
+    const rightResult = evaluate(right, fruit);
+
+    if (operator === "AND") {
+      return leftResult && rightResult;
+    }
+    if (operator === "OR") {
+      return leftResult || rightResult;
+    }
+  }
+  return false;
+};
+
+const parse = (tokens) => {
+  const precedence = { OR: 1, AND: 2 };
+  const values = [];
+  const ops = [];
+
+  const applyOp = () => {
+    const op = ops.pop();
+    const right = values.pop();
+    const left = values.pop();
+    values.push([left, op, right]);
+  };
+  for (const token of tokens) {
+    if (typeof token === "object") {
+      values.push(token);
+    } else if (token === "(") {
+      ops.push(token);
+    } else if (token === ")") {
+      while (ops.length && ops[ops.length - 1] !== "(") {
+        applyOp();
+      }
+      ops.pop();
+    } else {
+      while (
+        ops.length &&
+        ops[ops.length - 1] !== "(" &&
+        precedence[ops[ops.length - 1]] >= precedence[token]
+      ) {
+        applyOp();
+      }
+      ops.push(token);
+    }
+  }
+
+  while (ops.length) {
+    applyOp();
+  }
+
+  return values[0];
+};
+
+// --------- filter & events --------
 
 async function filterSuggestions() {
   const all = await getFruits();
-  let result = all;
+  let result;
 
-  const fruitMatchesFilter = (fruit, filter) => {
-    const { key, value } = filter;
-    const searchValue = value.toLowerCase();
-
-    if (fruit[key] === undefined || fruit[key] === null) return false;
-    if (typeof fruit[key] === "object") {
-      return Object.values(fruit[key]).some((nestedVal) =>
-        String(nestedVal).toLowerCase().includes(searchValue)
-      );
+  if (filterTokens.length > 0) {
+    const logicTree = parse(filterTokens);
+    if (logicTree) {
+      result = all.filter((fruit) => evaluate(logicTree, fruit));
+    } else {
+      result = all;
     }
-    return String(fruit[key]).toLowerCase().includes(searchValue);
-  };
-
-  const activeGroupsWithFilters = activeFilters.filter(
-    (g) => g.filters.length > 0
-  );
-
-  if (activeGroupsWithFilters.length > 0) {
-    const supergroups = splitByOr(activeGroupsWithFilters);
-    result = all.filter((fruit) => {
-      return supergroups.some((andChain) => {
-        return andChain.every((group) => {
-          return group.filters.every((filter) =>
-            fruitMatchesFilter(fruit, filter)
-          );
-        });
-      });
-    });
   } else {
     result = all;
   }
@@ -319,14 +331,9 @@ async function filterSuggestions() {
   renderList(result);
   renderChips();
 }
-// -------- event listeners ---------
 
-// suggestion blocks show once page is loaded
-
-document.addEventListener("DOMContentLoaded", async () => {
-  const list = await getFruits();
-  renderList(list);
-  renderChips();
+document.addEventListener("DOMContentLoaded", () => {
+  filterSuggestions();
 });
 
 // when user starts typing, the suggestion blocks are filtered
