@@ -7,9 +7,9 @@ let fruitCache = []; // keep data after first fetch
 let filterTokens = [];
 let pendingKey = ""; // stores key for draft chip
 let pendingChip = null;
+let pendingMethod = "includes"; // to store comparison types
 
 // get fruits from API
-
 async function getFruits() {
   if (fruitCache.length) return fruitCache;
   try {
@@ -28,7 +28,6 @@ async function getFruits() {
 }
 
 // debounce event
-
 function debounce(myFunction, delay = 300) {
   let time;
   return (...args) => {
@@ -41,7 +40,6 @@ function debounce(myFunction, delay = 300) {
 // --------- rendering ----------
 
 // display the fruit cards
-
 const renderList = (fruits) => {
   fruitContainer.innerHTML = "";
   if (fruits.length === 0) {
@@ -74,7 +72,6 @@ const renderList = (fruits) => {
 };
 
 // display the filter dropdown
-
 const renderFilters = (fruits) => {
   const listElement = filterContainer.querySelector(".filters");
   listElement.innerHTML = "";
@@ -90,6 +87,45 @@ const renderFilters = (fruits) => {
     listItem.textContent = key;
     listElement.appendChild(listItem);
   });
+};
+
+// display chips
+const renderChips = () => {
+  chipContainer.innerHTML = "";
+
+  filterTokens.forEach((token, index) => {
+    const chip = document.createElement("div");
+    chip.className = "chip";
+
+    if (typeof token === "object" && token !== null) {
+      let methodText = "";
+      if(token.type === "startsWith") {
+        methodText = "starts with: ";
+      } else if (token.type === "endsWith") {
+        methodText = "ends with: ";
+      }
+
+      chip.textContent = `${token.key}: ${methodText}${token.value}`;
+
+      const close = document.createElement("button");
+      close.className = "chip-close";
+      close.textContent = "×";
+      close.addEventListener("click", () => {
+        filterTokens.splice(index, 1);
+        filterSuggestions();
+      });
+      chip.appendChild(close);
+    } else {
+      chip.textContent = token;
+      chip.classList.add("operator");
+    }
+
+    chipContainer.appendChild(chip);
+  });
+
+  if (pendingChip) {
+    chipContainer.appendChild(pendingChip);
+  }
 };
 
 // ----------- chip handling -------------
@@ -133,6 +169,16 @@ const completeChip = (e) => {
     return;
   }
 
+  const commands = ["starts with:", "ends with:"];
+  if (pendingChip && commands.includes(value.toLowerCase())) {
+    e.preventDefault();
+
+    pendingMethod = value.toLowerCase() === "starts with:" ? "startsWith" : "endsWith";
+    pendingChip.textContent = `${pendingKey}: ${pendingMethod} `;
+    searchInput.value = "";
+    return;
+  }
+
   if (e.key === "Enter" && value.includes(":") && !pendingChip) {
     e.preventDefault();
     const [key, ...valParts] = value.split(":");
@@ -168,10 +214,11 @@ const completeChip = (e) => {
   if (pendingChip && triggers.includes(e.key)) {
     e.preventDefault();
     if (value) {
-      filterTokens.push({ key: pendingKey, value });
+      filterTokens.push({ key: pendingKey, value: value, type: pendingMethod });
       pendingChip.remove();
       pendingChip = null;
       pendingKey = "";
+      pendingMethod = "includes"; //reset for next chip
       searchInput.value = "";
       filterSuggestions();
     }
@@ -189,50 +236,32 @@ const completeChip = (e) => {
   }
 };
 
-const renderChips = () => {
-  chipContainer.innerHTML = "";
-
-  filterTokens.forEach((token, index) => {
-    const chip = document.createElement("div");
-    chip.className = "chip";
-
-    if (typeof token === "object" && token !== null) {
-      chip.textContent = `${token.key}: ${token.value}`;
-
-      const close = document.createElement("button");
-      close.className = "chip-close";
-      close.textContent = "×";
-      close.addEventListener("click", () => {
-        filterTokens.splice(index, 1);
-        filterSuggestions();
-      });
-      chip.appendChild(close);
-    } else {
-      chip.textContent = token;
-      chip.classList.add("operator");
-    }
-
-    chipContainer.appendChild(chip);
-  });
-
-  if (pendingChip) {
-    chipContainer.appendChild(pendingChip);
-  }
-};
-
 // ------ filter helper functions ---------
 
 const fruitMatchesFilter = (fruit, filter) => {
-  const { key, value } = filter;
+  const { key, value, type = "includes" } = filter;
   const searchValue = value.toLowerCase();
+  const fruitValue = fruit[key];
 
-  if (fruit[key] === undefined || fruit[key] === null) return false;
-  if (typeof fruit[key] === "object") {
+  if (fruitValue === undefined || fruitValue === null) return false;
+  if (typeof fruitValue === "object") {
     return Object.values(fruit[key]).some((nestedVal) =>
       String(nestedVal).toLowerCase().includes(searchValue)
     );
   }
-  return String(fruit[key]).toLowerCase().includes(searchValue);
+
+  const fruitValueString = String(fruitValue).toLowerCase();
+
+  //comparisons
+  switch (type) {
+    case "startsWith":
+      return fruitValueString.startsWith(searchValue);
+    case "endsWith":
+      return fruitValueString.endsWith(searchValue);
+    case "includes":
+    default:
+      return fruitValueString.includes(searchValue);
+  }
 };
 
 const evaluate = (node, fruit) => {
@@ -337,7 +366,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // when user starts typing, the suggestion blocks are filtered
-
 searchInput.addEventListener(
   "keyup",
   debounce(() => {
@@ -355,7 +383,6 @@ searchInput.addEventListener("focus", async () => {
 });
 
 // hide dropdown when out of focus
-
 document.addEventListener("click", (e) => {
   if (e.target !== searchInput && !filterContainer.contains(e.target)) {
     console.log("Clicked outside, hiding dropdown.");
@@ -369,7 +396,6 @@ document.addEventListener("click", (e) => {
 });
 
 // draft chip wiring
-
 filterContainer.addEventListener("click", (e) => {
   if (e.target.matches(".filter")) {
     createPendingChip(e.target.textContent);
