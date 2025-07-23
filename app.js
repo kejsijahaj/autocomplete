@@ -2,6 +2,7 @@ const searchInput = document.querySelector("#search");
 const fruitContainer = document.querySelector(".fruit-container");
 const filterContainer = document.querySelector(".filter-container");
 const chipContainer = document.querySelector("#chipContainer");
+const searchButton = document.querySelector(".icon-button");
 
 let fruitCache = []; // keep data after first fetch
 let filterTokens = [];
@@ -53,19 +54,20 @@ const renderList = (fruits) => {
     div.className = "card";
     const label = document.createElement("h4");
     label.textContent = fruit.name;
+    label.className = "card-label";
     div.appendChild(label);
 
-    div.innerHTML += Object.entries(fruit)
-      .filter(([key]) => key !== "name")
-      .map(([key, value]) => {
-        if (typeof value === "object" && value !== null) {
-          return `${key}: ${Object.entries(value)
-            .map(([k, v]) => `${k.substring(0, 3)}:${v}`)
-            .join(", ")}`;
-        }
-        return `${key}: ${value}`;
-      })
-      .join("<br>");
+    // div.innerHTML += Object.entries(fruit)
+    //   .filter(([key]) => key !== "name")
+    //   .map(([key, value]) => {
+    //     if (typeof value === "object" && value !== null) {
+    //       return `${key}: ${Object.entries(value)
+    //         .map(([k, v]) => `${k.substring(0, 3)}:${v}`)
+    //         .join(", ")}`;
+    //     }
+    //     return `${key}: ${value}`;
+    //   })
+    //   .join("<br>");
 
     fruitContainer.appendChild(div);
   });
@@ -99,7 +101,7 @@ const renderChips = () => {
 
     if (typeof token === "object" && token !== null) {
       let methodText = "";
-      if(token.type === "startsWith") {
+      if (token.type === "startsWith") {
         methodText = "starts with: ";
       } else if (token.type === "endsWith") {
         methodText = "ends with: ";
@@ -173,9 +175,11 @@ const completeChip = (e) => {
   if (pendingChip && commands.includes(value.toLowerCase())) {
     e.preventDefault();
 
-    pendingMethod = value.toLowerCase() === "starts with:" ? "startsWith" : "endsWith";
+    pendingMethod =
+      value.toLowerCase() === "starts with:" ? "startsWith" : "endsWith";
     pendingChip.textContent = `${pendingKey}: ${pendingMethod} `;
     searchInput.value = "";
+    filterContainer.style.display = 'none';
     return;
   }
 
@@ -190,6 +194,7 @@ const completeChip = (e) => {
       searchInput.value = "";
       filterSuggestions();
     }
+    filterContainer.style.display = 'none';
     return;
   }
 
@@ -221,6 +226,7 @@ const completeChip = (e) => {
       pendingMethod = "includes"; //reset for next chip
       searchInput.value = "";
       filterSuggestions();
+      filterContainer.style.display = 'none';
     }
     return;
   }
@@ -368,6 +374,13 @@ document.addEventListener("DOMContentLoaded", () => {
 // when user starts typing, the suggestion blocks are filtered
 searchInput.addEventListener(
   "keyup",
+  debounce(() => {
+    filterSuggestions();
+  }, 300)
+);
+
+searchButton.addEventListener(
+  "click",
   debounce(() => {
     filterSuggestions();
   }, 300)
