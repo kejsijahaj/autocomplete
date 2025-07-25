@@ -29,7 +29,6 @@ async function getFruits() {
 
     fruitCache = detailedPokemonList;
     return fruitCache;
-
   } catch (error) {
     console.error("Failed to fetch Pokémon data:", error);
     fruitContainer.innerHTML =
@@ -79,6 +78,28 @@ const renderList = (pokemonList) => {
 
     fruitContainer.appendChild(card);
   });
+
+  const cards = document.querySelectorAll(".card");
+
+  // --------- hover effects -------------
+
+cards.forEach((card) => {
+  const sprite = card.querySelector(".card-sprite");
+  card.addEventListener("mousemove", (e) => {
+    const rect = sprite.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+
+    const rotateX = (y / rect.height) * -30;
+    const rotateY = (x / rect.width) * 30;
+
+    sprite.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.1, 1.1, 1.1)`;
+  });
+
+  card.addEventListener("mouseleave", () => {
+    sprite.style.transform = `rotateX(0) rotateY(0) scale3d(1, 1, 1)`;
+  });
+});
 };
 
 // display the filter dropdown
@@ -184,7 +205,7 @@ const completeChip = (e) => {
       value.toLowerCase() === "starts with:" ? "startsWith" : "endsWith";
     pendingChip.textContent = `${pendingKey}: ${pendingMethod} `;
     searchInput.value = "";
-    filterContainer.style.display = 'none';
+    filterContainer.style.display = "none";
     return;
   }
 
@@ -199,7 +220,7 @@ const completeChip = (e) => {
       searchInput.value = "";
       filterSuggestions();
     }
-    filterContainer.style.display = 'none';
+    filterContainer.style.display = "none";
     return;
   }
 
@@ -231,7 +252,7 @@ const completeChip = (e) => {
       pendingMethod = "includes"; //reset for next chip
       searchInput.value = "";
       filterSuggestions();
-      filterContainer.style.display = 'none';
+      filterContainer.style.display = "none";
     }
     return;
   }
