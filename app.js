@@ -1,18 +1,18 @@
 const searchInput = document.querySelector("#search");
-const fruitContainer = document.querySelector(".fruit-container");
+const pokemonContainer = document.querySelector(".pokemon-container");
 const filterContainer = document.querySelector(".filter-container");
 const chipContainer = document.querySelector("#chipContainer");
 const searchButton = document.querySelector(".icon-button");
 
-let fruitCache = []; // keep data after first fetch
+let pokemonCache = []; // keep data after first fetch
 let filterTokens = [];
 let pendingKey = ""; // stores key for draft chip
 let pendingChip = null;
 let pendingMethod = "includes"; // to store comparison types
 
-// get fruits from API
-async function getFruits() {
-  if (fruitCache.length) return fruitCache;
+// get pokemons from API
+async function getPokemons() {
+  if (pokemonCache.length) return pokemonCache;
 
   try {
     const listResponse = await fetch(
@@ -27,11 +27,11 @@ async function getFruits() {
 
     const detailedPokemonList = await Promise.all(detailPromises);
 
-    fruitCache = detailedPokemonList;
-    return fruitCache;
+    pokemonCache = detailedPokemonList;
+    return pokemonCache;
   } catch (error) {
     console.error("Failed to fetch Pokémon data:", error);
-    fruitContainer.innerHTML =
+    pokemonContainer.innerHTML =
       "<p>Could not load Pokémon data. Please try again later.</p>";
     return [];
   }
@@ -51,9 +51,9 @@ function debounce(myFunction, delay = 300) {
 
 // display the pokemon cards
 const renderList = (pokemonList) => {
-  fruitContainer.innerHTML = "";
+  pokemonContainer.innerHTML = "";
   if (pokemonList.length === 0) {
-    fruitContainer.innerHTML =
+    pokemonContainer.innerHTML =
       "<p class='no-results'>No Pokémon found matching your criteria.</p>";
     return;
   }
@@ -82,12 +82,12 @@ const renderList = (pokemonList) => {
     content.appendChild(label);
     card.appendChild(content);
 
-    fruitContainer.appendChild(card);
+    pokemonContainer.appendChild(card);
   });
 
   // --------- hover effects -------------
 
-  const allCards = fruitContainer.querySelectorAll(".card");
+  const allCards = pokemonContainer.querySelectorAll(".card");
   allCards.forEach((card) => {
     card.addEventListener("mousemove", (e) => {
       const rect = card.getBoundingClientRect();
@@ -221,7 +221,7 @@ const completeChip = (e) => {
     e.preventDefault();
     const [key, ...valParts] = value.split(":");
     const val = valParts.join(":").trim();
-    const validKeys = fruitCache.length ? Object.keys(fruitCache[0]) : [];
+    const validKeys = pokemonCache.length ? Object.keys(pokemonCache[0]) : [];
 
     if (key && val && validKeys.includes(key.trim().toLowerCase())) {
       filterTokens.push({ key: key.trim(), value: val });
@@ -267,7 +267,7 @@ const completeChip = (e) => {
 
   if (e.key === "Enter" && !pendingChip && value) {
     const potentialKey = value.toLowerCase();
-    const validKeys = fruitCache.length ? Object.keys(fruitCache[0]) : [];
+    const validKeys = pokemonCache.length ? Object.keys(pokemonCache[0]) : [];
     if (validKeys.includes(potentialKey)) {
       e.preventDefault();
       createPendingChip(potentialKey);
@@ -278,21 +278,16 @@ const completeChip = (e) => {
 
 // ------ filter helper functions ---------
 
-// --- Replace fruitMatchesFilter with this ---
-
-const fruitMatchesFilter = (pokemon, filter) => {
+const pokemonMatchesFilter = (pokemon, filter) => {
   const { key, value, type = "includes" } = filter;
   const searchValue = value.toLowerCase();
   const pokemonValue = pokemon[key];
 
   if (pokemonValue === undefined || pokemonValue === null) return false;
 
-  // Special handling for the 'types' array
   if (key === "type") {
-    // Check if SOME of the pokemon's types match the search
     return pokemon.types.some((typeInfo) => {
       const typeName = typeInfo.type.name;
-      // Now apply the startsWith/endsWith/includes logic
       switch (type) {
         case "startsWith":
           return typeName.startsWith(searchValue);
@@ -306,7 +301,6 @@ const fruitMatchesFilter = (pokemon, filter) => {
 
   const pokemonValueString = String(pokemonValue).toLowerCase();
 
-  // For all other keys, use the normal comparison
   switch (type) {
     case "startsWith":
       return pokemonValueString.startsWith(searchValue);
@@ -317,16 +311,16 @@ const fruitMatchesFilter = (pokemon, filter) => {
   }
 };
 
-const evaluate = (node, fruit) => {
+const evaluate = (node, pokemon) => {
   if (typeof node === "object" && node !== null && !Array.isArray(node)) {
-    return fruitMatchesFilter(fruit, node);
+    return pokemonMatchesFilter(pokemon, node);
   }
 
   if (Array.isArray(node)) {
     const [left, operator, right] = node;
 
-    const leftResult = evaluate(left, fruit);
-    const rightResult = evaluate(right, fruit);
+    const leftResult = evaluate(left, pokemon);
+    const rightResult = evaluate(right, pokemon);
 
     if (operator === "AND") {
       return leftResult && rightResult;
@@ -381,13 +375,13 @@ const parse = (tokens) => {
 // --------- filter & events --------
 
 async function filterSuggestions() {
-  const all = await getFruits();
+  const all = await getPokemons();
   let result;
 
   if (filterTokens.length > 0) {
     const logicTree = parse(filterTokens);
     if (logicTree) {
-      result = all.filter((fruit) => evaluate(logicTree, fruit));
+      result = all.filter((pokemon) => evaluate(logicTree, pokemon));
     } else {
       result = all;
     }
@@ -397,8 +391,8 @@ async function filterSuggestions() {
 
   const currentInput = searchInput.value.trim().toLowerCase();
   if (currentInput && !pendingKey) {
-    result = result.filter((fruit) =>
-      Object.values(fruit).some((val) => {
+    result = result.filter((pokemon) =>
+      Object.values(pokemon).some((val) => {
         if (val === undefined || val === null) return false;
         if (typeof val === "object") {
           return Object.values(val).some((nestedVal) =>
@@ -436,9 +430,9 @@ searchButton.addEventListener(
 // filters are displayed when you click the input tag
 searchInput.addEventListener("focus", async () => {
   console.log("Focus event fired! Attempting to show dropdown.");
-  const fruits = await getFruits();
-  console.log("Fruits data received:", fruits);
-  renderFilters(fruits);
+  const pokemons = await getPokemons();
+  console.log("Pokemons data received:", pokemons);
+  renderFilters(pokemons);
   filterContainer.style.display = "block";
 });
 
