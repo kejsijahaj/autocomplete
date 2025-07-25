@@ -139,12 +139,14 @@ body {
 }
 
 .card {
-  display: inline-block;
-  vertical-align: top;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
   width: 250px;
   height: 200px;
   list-style: none;
-  justify-content: center;
   border-radius: 10px;
   background: #edbab2d3;
   border: 1px solid #c9968e;
@@ -152,6 +154,11 @@ body {
   font-size: 17px;
   color: #3d3130;
   overflow: hidden;
+}
+
+.card-sprite {
+  width: 120px;
+  height: 120px;
 }
 
 .card-label {

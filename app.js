@@ -13,17 +13,27 @@ let pendingMethod = "includes"; // to store comparison types
 // get fruits from API
 async function getFruits() {
   if (fruitCache.length) return fruitCache;
+
   try {
-    const response = await fetch(
-      "https://corsproxy.io/?https://www.fruityvice.com/api/fruit/all"
+    const listResponse = await fetch(
+      "https://pokeapi.co/api/v2/pokemon?limit=15"
     );
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    fruitCache = await response.json();
+    if (!listResponse.ok) throw new Error("Failed to fetch Pokémon list");
+    const listData = await listResponse.json();
+
+    const detailPromises = listData.results.map((pokemon) =>
+      fetch(pokemon.url).then((res) => res.json())
+    );
+
+    const detailedPokemonList = await Promise.all(detailPromises);
+
+    fruitCache = detailedPokemonList;
     return fruitCache;
+
   } catch (error) {
-    console.error("Failed to fetch fruits:", error);
+    console.error("Failed to fetch Pokémon data:", error);
     fruitContainer.innerHTML =
-      "<p>Could not load fruit data. Please try again later.</p>";
+      "<p>Could not load Pokémon data. Please try again later.</p>";
     return [];
   }
 }
@@ -41,48 +51,43 @@ function debounce(myFunction, delay = 300) {
 // --------- rendering ----------
 
 // display the fruit cards
-const renderList = (fruits) => {
+// --- Replace renderList with this ---
+
+const renderList = (pokemonList) => {
   fruitContainer.innerHTML = "";
-  if (fruits.length === 0) {
+  if (pokemonList.length === 0) {
     fruitContainer.innerHTML =
-      "<li class='card no-results'>No fruits found matching your criteria.</li>";
+      "<p class='no-results'>No Pokémon found matching your criteria.</p>";
     return;
   }
 
-  fruits.forEach((fruit) => {
-    const div = document.createElement("div");
-    div.className = "card";
+  pokemonList.forEach((pokemon) => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const sprite = document.createElement("img");
+    sprite.className = "card-sprite";
+    sprite.src = pokemon.sprites.front_default;
+    sprite.alt = pokemon.name;
+
     const label = document.createElement("h4");
-    label.textContent = fruit.name;
     label.className = "card-label";
-    div.appendChild(label);
+    label.textContent = pokemon.name;
 
-    // div.innerHTML += Object.entries(fruit)
-    //   .filter(([key]) => key !== "name")
-    //   .map(([key, value]) => {
-    //     if (typeof value === "object" && value !== null) {
-    //       return `${key}: ${Object.entries(value)
-    //         .map(([k, v]) => `${k.substring(0, 3)}:${v}`)
-    //         .join(", ")}`;
-    //     }
-    //     return `${key}: ${value}`;
-    //   })
-    //   .join("<br>");
+    card.appendChild(sprite);
+    card.appendChild(label);
 
-    fruitContainer.appendChild(div);
+    fruitContainer.appendChild(card);
   });
 };
 
 // display the filter dropdown
-const renderFilters = (fruits) => {
+const renderFilters = () => {
   const listElement = filterContainer.querySelector(".filters");
   listElement.innerHTML = "";
 
-  if (!fruits || fruits.length === 0) {
-    return;
-  }
+  const keys = ["name", "type", "weight", "height", "base_experience"];
 
-  const keys = Object.keys(fruits[0]);
   keys.forEach((key) => {
     const listItem = document.createElement("li");
     listItem.className = "filter";
@@ -244,29 +249,42 @@ const completeChip = (e) => {
 
 // ------ filter helper functions ---------
 
-const fruitMatchesFilter = (fruit, filter) => {
+// --- Replace fruitMatchesFilter with this ---
+
+const fruitMatchesFilter = (pokemon, filter) => {
   const { key, value, type = "includes" } = filter;
   const searchValue = value.toLowerCase();
-  const fruitValue = fruit[key];
+  const pokemonValue = pokemon[key];
 
-  if (fruitValue === undefined || fruitValue === null) return false;
-  if (typeof fruitValue === "object") {
-    return Object.values(fruit[key]).some((nestedVal) =>
-      String(nestedVal).toLowerCase().includes(searchValue)
-    );
+  if (pokemonValue === undefined || pokemonValue === null) return false;
+
+  // Special handling for the 'types' array
+  if (key === "type") {
+    // Check if SOME of the pokemon's types match the search
+    return pokemon.types.some((typeInfo) => {
+      const typeName = typeInfo.type.name;
+      // Now apply the startsWith/endsWith/includes logic
+      switch (type) {
+        case "startsWith":
+          return typeName.startsWith(searchValue);
+        case "endsWith":
+          return typeName.endsWith(searchValue);
+        default:
+          return typeName.includes(searchValue);
+      }
+    });
   }
 
-  const fruitValueString = String(fruitValue).toLowerCase();
+  const pokemonValueString = String(pokemonValue).toLowerCase();
 
-  //comparisons
+  // For all other keys, use the normal comparison
   switch (type) {
     case "startsWith":
-      return fruitValueString.startsWith(searchValue);
+      return pokemonValueString.startsWith(searchValue);
     case "endsWith":
-      return fruitValueString.endsWith(searchValue);
-    case "includes":
+      return pokemonValueString.endsWith(searchValue);
     default:
-      return fruitValueString.includes(searchValue);
+      return pokemonValueString.includes(searchValue);
   }
 };
 
