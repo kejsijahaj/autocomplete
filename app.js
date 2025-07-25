@@ -49,9 +49,7 @@ function debounce(myFunction, delay = 300) {
 
 // --------- rendering ----------
 
-// display the fruit cards
-// --- Replace renderList with this ---
-
+// display the pokemon cards
 const renderList = (pokemonList) => {
   fruitContainer.innerHTML = "";
   if (pokemonList.length === 0) {
@@ -64,6 +62,13 @@ const renderList = (pokemonList) => {
     const card = document.createElement("div");
     card.className = "card";
 
+    const holo = document.createElement("div");
+    holo.className = "card-holo";
+    card.appendChild(holo);
+
+    const content = document.createElement("div");
+    content.className = "card-content";
+
     const sprite = document.createElement("img");
     sprite.className = "card-sprite";
     sprite.src = pokemon.sprites.front_default;
@@ -73,8 +78,9 @@ const renderList = (pokemonList) => {
     label.className = "card-label";
     label.textContent = pokemon.name;
 
-    card.appendChild(sprite);
-    card.appendChild(label);
+    content.appendChild(sprite);
+    content.appendChild(label);
+    card.appendChild(content);
 
     fruitContainer.appendChild(card);
   });
@@ -83,23 +89,27 @@ const renderList = (pokemonList) => {
 
   // --------- hover effects -------------
 
-cards.forEach((card) => {
-  const sprite = card.querySelector(".card-sprite");
-  card.addEventListener("mousemove", (e) => {
-    const rect = sprite.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
+  const allCards = fruitContainer.querySelectorAll(".card");
+  allCards.forEach((card) => {
+    card.addEventListener("mousemove", (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
 
-    const rotateX = (y / rect.height) * -30;
-    const rotateY = (x / rect.width) * 30;
+      card.style.setProperty("--mx", x / rect.width);
+      card.style.setProperty("--my", y / rect.height);
 
-    sprite.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.1, 1.1, 1.1)`;
+      const rotateX = (y / rect.height - 0.5) * -20; 
+      const rotateY = (x / rect.width - 0.5) * 20; 
+      card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    });
+
+    card.addEventListener("mouseleave", () => {
+      card.style.setProperty("--mx", 0.5);
+      card.style.setProperty("--my", 0.5);
+      card.style.transform = "perspective(1000px) rotateX(0) rotateY(0)";
+    });
   });
-
-  card.addEventListener("mouseleave", () => {
-    sprite.style.transform = `rotateX(0) rotateY(0) scale3d(1, 1, 1)`;
-  });
-});
 };
 
 // display the filter dropdown
