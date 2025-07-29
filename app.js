@@ -16,7 +16,7 @@ async function getPokemons() {
 
   try {
     const listResponse = await fetch(
-      "https://pokeapi.co/api/v2/pokemon?limit=15"
+      "https://pokeapi.co/api/v2/pokemon?limit=150"
     );
     if (!listResponse.ok) throw new Error("Failed to fetch Pokémon list");
     const listData = await listResponse.json();
@@ -97,8 +97,8 @@ const renderList = (pokemonList) => {
       card.style.setProperty("--mx", x / rect.width);
       card.style.setProperty("--my", y / rect.height);
 
-      const rotateX = (y / rect.height - 0.5) * -20; 
-      const rotateY = (x / rect.width - 0.5) * 20; 
+      const rotateX = (y / rect.height - 0.5) * -30; 
+      const rotateY = (x / rect.width - 0.5) * 30; 
       card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     });
 
@@ -115,7 +115,7 @@ const renderFilters = () => {
   const listElement = filterContainer.querySelector(".filters");
   listElement.innerHTML = "";
 
-  const keys = ["name", "type", "weight", "height", "base_experience"];
+  const keys = ["name", "types", "weight", "height", "base_experience"];
 
   keys.forEach((key) => {
     const listItem = document.createElement("li");
@@ -285,7 +285,7 @@ const pokemonMatchesFilter = (pokemon, filter) => {
 
   if (pokemonValue === undefined || pokemonValue === null) return false;
 
-  if (key === "type") {
+  if (key === "types") {
     return pokemon.types.some((typeInfo) => {
       const typeName = typeInfo.type.name;
       switch (type) {
