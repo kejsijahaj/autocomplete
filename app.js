@@ -337,8 +337,8 @@ function addHoverEffects() {
       card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     });
     card.addEventListener("mouseleave", () => {
-      card.style.setProperty("--mx", 0);
-      card.style.setProperty("--my", 0);
+      card.style.setProperty("--mx", 0.5);
+      card.style.setProperty("--my", 0.5);
       card.style.transform = "perspective(1000px) rotateX(0) rotateY(0)";
     });
   });
