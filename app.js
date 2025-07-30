@@ -136,8 +136,22 @@ const completeChip = (e) => {
     filterTokens.length > 0
   ) {
     e.preventDefault();
-    filterTokens.pop();
+    const tokenToEdit = filterTokens.pop();
+    let textToEdit = "";
+    if (typeof tokenToEdit === "object" && tokenToEdit !== null) {
+      let methodText = "";
+      if (tokenToEdit.type === "startsWith") {
+        methodText = "starts with: ";
+      } else if (tokenToEdit.type === "endsWith") {
+        methodText = "ends with: ";
+      }
+      textToEdit = `${tokenToEdit.key}: ${methodText}${tokenToEdit.value}`;
+    }
+
+    searchInput.value = textToEdit;
+
     filterSuggestions();
+
     return;
   }
   if (e.key === "Backspace" && value === "" && pendingChip) {
@@ -160,11 +174,27 @@ const completeChip = (e) => {
   }
   if (e.key === "Enter" && value.includes(":") && !pendingChip) {
     e.preventDefault();
-    const [key, ...valParts] = value.split(":");
-    const val = valParts.join(":").trim();
+
+    const [rawKey, ...valParts] = value.split(":");
+    const key = rawKey.trim().toLowerCase();
+    let potentialValue = valParts.join(":").trim();
+
     const validKeys = pokemonCache.length ? Object.keys(pokemonCache[0]) : [];
-    if (key && val && validKeys.includes(key.trim().toLowerCase())) {
-      filterTokens.push({ key: key.trim(), value: val, type: "includes" });
+
+    if (key && potentialValue && validKeys.includes(key)) {
+      let finalValue = potentialValue;
+      let finalType = "includes";
+
+      if (potentialValue.toLowerCase().startsWith("starts with:")) {
+        finalType = "startsWith";
+        finalValue = potentialValue.substring("starts with:".length).trim();
+      } else if (potentialValue.toLowerCase().startsWith("ends with:")) {
+        finalType = "endsWith";
+        finalValue = potentialValue.substring("ends with:".length).trim();
+      }
+
+      filterTokens.push({ key: key, value: finalValue, type: finalType });
+
       searchInput.value = "";
       filterSuggestions();
     }
@@ -222,17 +252,23 @@ const pokemonMatchesFilter = (pokemon, filter) => {
     return pokemon.types.some((typeInfo) => {
       const typeName = typeInfo.type.name;
       switch (type) {
-        case "startsWith": return typeName.startsWith(searchValue);
-        case "endsWith": return typeName.endsWith(searchValue);
-        default: return typeName.includes(searchValue);
+        case "startsWith":
+          return typeName.startsWith(searchValue);
+        case "endsWith":
+          return typeName.endsWith(searchValue);
+        default:
+          return typeName.includes(searchValue);
       }
     });
   }
   const pokemonValueString = String(pokemonValue).toLowerCase();
   switch (type) {
-    case "startsWith": return pokemonValueString.startsWith(searchValue);
-    case "endsWith": return pokemonValueString.endsWith(searchValue);
-    default: return pokemonValueString.includes(searchValue);
+    case "startsWith":
+      return pokemonValueString.startsWith(searchValue);
+    case "endsWith":
+      return pokemonValueString.endsWith(searchValue);
+    default:
+      return pokemonValueString.includes(searchValue);
   }
 };
 
@@ -348,12 +384,15 @@ document.addEventListener("DOMContentLoaded", () => {
   filterSuggestions();
 });
 
-searchInput.addEventListener("input", debounce(() => {
+searchInput.addEventListener(
+  "input",
+  debounce(() => {
     if (!pendingKey) filterSuggestions();
-}, 300));
+  }, 300)
+);
 
 searchButton.addEventListener("click", () => {
-    filterSuggestions();
+  filterSuggestions();
 });
 
 searchInput.addEventListener("focus", async () => {
